@@ -2,19 +2,20 @@
 
 import { cookies } from 'next/headers';
 
+// Force update: 001 - هذا التعليق مهم لإجبار السيرفر على التحديث
 export async function setAdminCookie(password: string) {
-  // --- بداية منطقة التصحيح (Debug Area) ---
+  
+  // --- منطقة التشخيص (Debug Zone) ---
   console.log("--- DEBUG START ---");
-  console.log("Input Password (ما كتبته):", password);
-  console.log("Env Password (المخزن في السيرفر):", process.env.ADMIN_PASSWORD);
-  console.log("Are they equal? (هل يتطابقان؟):", password === process.env.ADMIN_PASSWORD);
+  console.log("Time:", new Date().toISOString()); // للتأكد أن هذه نسخة جديدة
+  console.log("Input Password:", password);
+  console.log("Env Password:", process.env.ADMIN_PASSWORD); 
+  console.log("Match?", password === process.env.ADMIN_PASSWORD);
   console.log("--- DEBUG END ---");
-  // ---------------------------------------
+  // ----------------------------------
 
-  // التحقق من كلمة المرور
   if (password === process.env.ADMIN_PASSWORD) {
-    
-    // إذا كانت صحيحة، نعطيه "ختم الدخول" (Cookie)
+    // في حالة التطابق، نقوم بإنشاء الكوكي
     (await cookies()).set('admin_session', 'true', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -28,7 +29,6 @@ export async function setAdminCookie(password: string) {
   return { success: false };
 }
 
-// دالة لتسجيل الخروج (اختيارية للمستقبل)
 export async function deleteAdminCookie() {
   (await cookies()).delete('admin_session');
 }
