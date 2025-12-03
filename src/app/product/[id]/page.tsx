@@ -1,7 +1,7 @@
 // src/app/product/[id]/page.tsx
 'use client';
 
-import React, { useState, use } from 'react'; // 👈 استيراد use
+import React, { useState, use } from 'react';
 import Image from 'next/image';
 import { useProduct } from '../../../context/ProductContext';
 import { useCart } from '../../../context/CartContext';
@@ -19,19 +19,24 @@ interface Product {
     inventoryCount: number;
 }
 
-// تعريف نوع الخصائص حيث params هي Promise
+// 🧠 دالة ذكية للتحقق هل الرابط لفيديو أم لا
+const isVideoFile = (url: string) => {
+    if (!url) return false;
+    // نتحقق مما إذا كان الرابط ينتهي بـ mp4 أو webm أو ogg
+    return /\.(mp4|webm|ogg)$/i.test(url);
+};
+
 export default function ProductDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-    // 👈 فك تغليف params باستخدام use للحصول على id
+    // فك تغليف المعاملات
     const { id } = use(params);
 
     const { products: rawProducts } = useProduct() as any;
     const products = rawProducts as Product[];
     const { addItemToCart } = useCart();
 
-    // البحث عن المنتج باستخدام المعرف
     const product = products.find(p => p.id === id);
 
-    // إذا لم يتم العثور على المنتج، يتم إظهار صفحة 404
+    // إذا لم يتم العثور على المنتج
     if (!product) {
         return notFound();
     }
@@ -40,13 +45,15 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
     const availableStock = product.inventoryCount;
     const isOutOfStock = availableStock === 0;
 
-    // تنسيق السعر
+    // التحقق من نوع الملف (للتصحيح والتشخيص)
+    const isVideo = isVideoFile(product.image);
+    // console.log("File Type Check:", isVideo ? "Video 🎥" : "Image 🖼️", product.image);
+
     const formattedPrice = product.price.toLocaleString('ar-IQ', { style: 'currency', currency: 'IQD', minimumFractionDigits: 0 });
 
     const handleAddToCart = () => {
         if (isOutOfStock) return;
 
-        // إضافة المنتج إلى السلة بالكمية المحددة
         addItemToCart({
             id: product.id,
             name: product.name,
@@ -56,22 +63,36 @@ export default function ProductDetailsPage({ params }: { params: Promise<{ id: s
         });
 
         alert(`تم إضافة ${quantity} من ${product.name} إلى السلة!`);
-        setQuantity(1); // إعادة تعيين الكمية بعد الإضافة
+        setQuantity(1);
     };
 
     return (
         <div className="container mx-auto px-4 py-12" dir="rtl">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 bg-white p-8 rounded-xl shadow-2xl">
 
-                {/* --- عمود الصورة --- */}
-                <div className="relative w-full aspect-square rounded-lg overflow-hidden border bg-gray-100">
-                    <Image
-                        src={product.image || 'https://via.placeholder.com/800'}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        priority // لتحسين سرعة التحميل
-                    />
+                {/* --- عمود الصورة أو الفيديو --- */}
+                <div className="relative w-full aspect-square rounded-lg overflow-hidden border bg-gray-100 flex items-center justify-center bg-black">
+                    
+                    {isVideo ? (
+                        // ✅ إذا كان فيديو: نعرض مشغل الفيديو
+                        <video 
+                            src={product.image} 
+                            controls 
+                            className="w-full h-full object-contain"
+                        >
+                            متصفحك لا يدعم تشغيل الفيديو.
+                        </video>
+                    ) : (
+                        // 🖼️ إذا كان صورة: نعرض الصورة كالمعتاد
+                        <Image
+                            src={product.image || 'https://via.placeholder.com/800'}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                            priority
+                        />
+                    )}
+                    
                 </div>
 
                 {/* --- عمود التفاصيل --- */}
