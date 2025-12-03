@@ -2,25 +2,21 @@
 
 import { cookies } from 'next/headers';
 
-// // Force Update: 003 - فحص شامل للمتغيرات
+// Force Update: 004 - تغيير اسم المتغير
 export async function setAdminCookie(password: string) {
   
-  console.log("--- DEBUG START (DEEP SCAN) ---");
-  // 1. طباعة عدد المتغيرات التي يراها السيرفر
+  // --- DEBUG ZONE ---
   const allKeys = Object.keys(process.env);
-  console.log("Total Env Keys Found:", allKeys.length);
-  
-  // 2. هل المتغير موجود ضمن القائمة؟
-  console.log("Is ADMIN_PASSWORD in list?", allKeys.includes('ADMIN_PASSWORD'));
-  
-  // 3. طباعة أول 5 متغيرات لنرى ماذا يوجد في الذاكرة
-  console.log("Sample Keys:", allKeys.slice(0, 5).join(", "));
-  
-  // 4. المحاولة المباشرة
-  console.log("Direct Access Value:", process.env.ADMIN_PASSWORD); 
+  console.log("--- DEBUG START (NEW VAR CHECK) ---");
+  // نبحث عن المتغير الجديد
+  console.log("Looking for DIZLY_PASSWORD...");
+  console.log("Is it found?", allKeys.includes('DIZLY_PASSWORD'));
+  console.log("Value Check:", process.env.DIZLY_PASSWORD);
   console.log("--- DEBUG END ---");
+  // ------------------
 
-  if (password === process.env.ADMIN_PASSWORD) {
+  // لاحظ أننا غيرنا الاسم هنا أيضاً 👇
+  if (password === process.env.DIZLY_PASSWORD) {
     (await cookies()).set('admin_session', 'true', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
