@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 
-// Force Update: 002 - فحص شامل للمتغيرات
+// // Force Update: 003 - فحص شامل للمتغيرات
 export async function setAdminCookie(password: string) {
   
   console.log("--- DEBUG START (DEEP SCAN) ---");
