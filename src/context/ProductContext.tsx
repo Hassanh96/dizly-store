@@ -13,6 +13,8 @@ export interface Product {
     name: string;
     price: number;
     image: string;
+    // 👇 هذا هو التعديل الجوهري: أضفنا النوع لنميز بين الفيديو والصورة
+    type: 'image' | 'video';
     description: string;
     categoryId: string;
     isFeatured: boolean;
@@ -181,11 +183,9 @@ export const useProduct = () => {
     return context;
 };
 
-// الخطاف الذي يتم استخدامه في admin/page.tsx
 export const useCategory = () => {
     const context = useContext(ProductContext); 
     if (context === undefined) {
-        // تم تغيير رسالة الخطأ هنا للتوافق مع المزود الفعلي
         throw new Error('useCategory must be used within a ProductProvider'); 
     }
     return { 

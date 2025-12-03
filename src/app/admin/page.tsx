@@ -1,199 +1,264 @@
+// src/app/admin/page.tsx
 'use client';
 
 import React, { useState } from 'react';
-import { useProduct, useCategory, Product, Category } from '../../context/ProductContext';
-import { useOrder, Order } from '../../context/OrderContext'; 
-import ProductEditForm from '../../components/ProductEditForm';
-// 👇👇 استيراد القائمة من الملف الجديد الذي أنشأته للتو
-import ProductList from '../../components/ProductList';
+// تأكد أن المسار هنا صحيح: يخرج من admin (..) ثم من app (..) ليصل إلى src ثم يدخل context
+import { useProduct, useCategory } from '../../context/ProductContext';
+import Image from 'next/image';
 
-// =========================================================
-// 1. نموذج إضافة قسم (Category Form)
-// =========================================================
-const CategoryForm = () => {
-    const { addCategory } = useCategory();
-    const [name, setName] = useState('');
-    const [image, setImage] = useState('');
-    
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!name.trim()) return;
-        
-        addCategory({ 
-            name: name.trim(), 
-            image: image.trim() || 'https://via.placeholder.com/150' 
-        });
-        
-        setName('');
-        setImage('');
-    };
-
-    return (
-        <div className="p-4 bg-white rounded-lg shadow h-fit">
-            <h3 className="text-xl font-bold mb-3">إدارة الأقسام</h3>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                <input type="text" placeholder="اسم القسم الجديد" value={name} onChange={(e) => setName(e.target.value)} className="p-2 border rounded" required />
-                <input type="text" placeholder="رابط صورة القسم (اختياري)" value={image} onChange={(e) => setImage(e.target.value)} className="p-2 border rounded" />
-                <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 font-bold">أضف قسم</button>
-            </form>
-        </div>
-    );
-};
-
-// =========================================================
-// 2. نموذج إضافة منتج (Product Form)
-// =========================================================
-const ProductForm = () => {
+export default function AdminPage() {
+    // استخدام الهوك لجلب البيانات والدوال
+    const { products, addProduct, deleteProduct } = useProduct();
     const { categories } = useCategory();
-    const { addProduct } = useProduct(); 
-    
+
+    // حالات (States) النموذج
     const [name, setName] = useState('');
-    const [price, setPrice] = useState(0);
-    const [description, setDescription] = useState('');
+    const [price, setPrice] = useState('');
     const [image, setImage] = useState('');
-    const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
+    const [description, setDescription] = useState('');
+    const [categoryId, setCategoryId] = useState('');
     const [isFeatured, setIsFeatured] = useState(false);
-    const [inventoryCount, setInventoryCount] = useState(10); 
+    const [inventoryCount, setInventoryCount] = useState('');
+    
+    // حالة جديدة لتحديد نوع الوسائط (صورة أو فيديو)
+    const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim() || price <= 0 || !categoryId) return;
-        
-        const newProduct = {
-            name: name.trim(),
-            price,
-            description,
+
+        // التحقق من البيانات المطلوبة
+        if (!name || !price || !categoryId || !inventoryCount) {
+            alert('يرجى ملء الحقول الأساسية');
+            return;
+        }
+
+        addProduct({
+            name,
+            price: Number(price),
             image,
+            type: mediaType, // إرسال النوع المختار (فيديو أو صورة)
+            description,
             categoryId,
             isFeatured,
-            inventoryCount: Number(inventoryCount),
-        };
-        
-        addProduct(newProduct);
-        
-        setName(''); setPrice(0); setDescription(''); setImage(''); setIsFeatured(false); setInventoryCount(10);
-    };
+            inventoryCount: Number(inventoryCount)
+        });
 
-    return (
-        <div className="p-4 bg-white rounded-lg shadow">
-            <h3 className="text-xl font-bold mb-3">أضف منتج جديد</h3>
-            <form onSubmit={handleSubmit} className="space-y-3">
-                <input type="text" placeholder="اسم المنتج" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-2 border rounded" required />
-                <div className="flex gap-2">
-                    <input type="number" placeholder="السعر" value={price || ''} onChange={(e) => setPrice(parseFloat(e.target.value))} className="w-1/2 p-2 border rounded" min="0" required />
-                    <input type="number" placeholder="الكمية" value={Number.isNaN(inventoryCount) ? '' : inventoryCount} onChange={(e) => setInventoryCount(parseInt(e.target.value))} className="w-1/2 p-2 border rounded bg-yellow-50" min="0" required />
-                </div>
-                <textarea placeholder="الوصف" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-2 border rounded" required />
-                <input type="text" placeholder="رابط صورة المنتج (URL)" value={image} onChange={(e) => setImage(e.target.value)} className="w-full p-2 border rounded" />
-                <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="w-full p-2 border rounded" required>
-                    <option value="">-- اختر القسم --</option>
-                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                </select>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                    <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} id="isFeatured" className="w-4 h-4" />
-                    <label htmlFor="isFeatured" className="text-sm">منتج مميز (وصل حديثاً)</label>
-                </div>
-                <button type="submit" className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 font-semibold">حفظ المنتج</button>
-            </form>
-        </div>
-    );
-};
-
-// =========================================================
-// 3. عرض الطلبات (Orders Display)
-// =========================================================
-const OrdersDisplay = ({ pendingOrders, completedOrders, onUpdateStatus }: { 
-    pendingOrders: Order[], 
-    completedOrders: Order[],
-    onUpdateStatus: (id: string, newStatus: any) => void 
-}) => {
-    const OrderCard = ({ order }: { order: Order }) => (
-        <div className={`p-4 rounded-lg shadow-md border ${order.status === 'Pending' ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'}`}>
-            <div className="flex justify-between items-start mb-2 border-b pb-2">
-                <div>
-                    <p className="font-bold text-lg text-gray-800">طلب #{order.id.slice(-6)}</p>
-                    <p className="text-sm text-gray-500">{new Date(order.date).toLocaleDateString()}</p>
-                </div>
-                <span className={`px-2 py-1 text-xs font-bold rounded-full ${order.status === 'Pending' ? 'bg-yellow-500 text-white' : 'bg-green-500 text-white'}`}>
-                    {order.status === 'Pending' ? 'قيد الانتظار' : 'مكتمل'}
-                </span>
-            </div>
-            <p className="text-gray-700">العميل: <strong>{order.customer.name}</strong></p>
-            <p className="font-bold mt-2 text-xl text-purple-700">{order.totalPrice.toLocaleString()} د.ع</p>
-            {order.status === 'Pending' && (
-                <button onClick={() => onUpdateStatus(order.id, 'Completed')} className="w-full mt-4 bg-green-600 text-white py-2 rounded hover:bg-green-700 font-bold">أكمل الطلب ✔️</button>
-            )}
-        </div>
-    );
-    
-    return (
-        <div className="space-y-8">
-            <section>
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">طلبات جديدة ({pendingOrders.length}) 🚨</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {pendingOrders.map(order => <OrderCard key={order.id} order={order} />)}
-                    {pendingOrders.length === 0 && <p className="text-gray-500">لا توجد طلبات جديدة.</p>}
-                </div>
-            </section>
-            <section>
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">الأرشيف ({completedOrders.length}) 📦</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-70">
-                    {completedOrders.map(order => <OrderCard key={order.id} order={order} />)}
-                </div>
-            </section>
-        </div>
-    );
-};
-
-// =========================================================
-// 4. صفحة الأدمن الرئيسية (Admin Page)
-// =========================================================
-export default function AdminPage() {
-    const { products: rawProducts, deleteProduct } = useProduct() as any;
-    const products = rawProducts as Product[];
-    const { orders, updateOrderStatus } = useOrder(); 
-    
-    const pendingOrders = orders ? orders.filter((o) => o.status === 'Pending') : [];
-    const completedOrders = orders ? orders.filter((o) => o.status !== 'Pending') : [];
-
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-
-    const handleUpdateStatus = (id: string, newStatus: 'Pending' | 'Completed' | 'Cancelled') => {
-        updateOrderStatus(id, newStatus);
+        // إعادة تعيين النموذج بعد الحفظ
+        setName('');
+        setPrice('');
+        setImage('');
+        setDescription('');
+        setInventoryCount('');
+        setIsFeatured(false);
+        setMediaType('image'); // إعادة التعيين للافتراضي
     };
 
     return (
         <div className="container mx-auto px-4 py-8" dir="rtl">
-            <h1 className="text-4xl font-extrabold text-purple-700 mb-10 border-b-4 pb-2">لوحة تحكم الأدمن ⚙️</h1>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-                <div className="lg:col-span-1"><CategoryForm /></div>
-                <div className="lg:col-span-2"><ProductForm /></div>
+            <h1 className="text-3xl font-bold mb-8 text-gray-800">لوحة التحكم - إدارة المنتجات</h1>
+
+            {/* --- نموذج إضافة منتج --- */}
+            <div className="bg-white p-6 rounded-lg shadow-md mb-10">
+                <h2 className="text-xl font-semibold mb-4 text-gray-700">إضافة منتج جديد</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* الاسم */}
+                        <div>
+                            <label className="block text-gray-700 mb-2">اسم المنتج</label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500"
+                                required
+                            />
+                        </div>
+
+                        {/* السعر */}
+                        <div>
+                            <label className="block text-gray-700 mb-2">السعر (د.ع)</label>
+                            <input
+                                type="number"
+                                value={price}
+                                onChange={(e) => setPrice(e.target.value)}
+                                className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {/* --- اختيار نوع الوسائط --- */}
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <label className="block text-gray-700 font-bold mb-3">نوع العرض:</label>
+                        <div className="flex gap-6">
+                            {/* خيار الصورة */}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="mediaType"
+                                    value="image"
+                                    checked={mediaType === 'image'}
+                                    onChange={() => setMediaType('image')}
+                                    className="w-5 h-5 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="text-gray-800 font-medium">صورة 🖼️</span>
+                            </label>
+
+                            {/* خيار الفيديو */}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="mediaType"
+                                    value="video"
+                                    checked={mediaType === 'video'}
+                                    onChange={() => setMediaType('video')}
+                                    className="w-5 h-5 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="text-gray-800 font-medium">فيديو 🎥</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* رابط الوسائط */}
+                    <div>
+                        <label className="block text-gray-700 mb-2">
+                            {mediaType === 'image' ? 'رابط الصورة (URL)' : 'رابط الفيديو (MP4 URL)'}
+                        </label>
+                        <input
+                            type="text"
+                            value={image}
+                            onChange={(e) => setImage(e.target.value)}
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500"
+                            placeholder={mediaType === 'image' ? "https://example.com/image.jpg" : "https://example.com/video.mp4"}
+                        />
+                    </div>
+
+                    {/* القسم */}
+                    <div>
+                        <label className="block text-gray-700 mb-2">القسم</label>
+                        <select
+                            value={categoryId}
+                            onChange={(e) => setCategoryId(e.target.value)}
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500"
+                            required
+                        >
+                            <option value="">اختر القسم...</option>
+                            {/* هنا نستخدم cat كاسم للمتغير داخل الحلقة */}
+                            {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* الوصف */}
+                    <div>
+                        <label className="block text-gray-700 mb-2">الوصف</label>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500 h-24"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* الكمية */}
+                        <div>
+                            <label className="block text-gray-700 mb-2">الكمية المتوفرة</label>
+                            <input
+                                type="number"
+                                value={inventoryCount}
+                                onChange={(e) => setInventoryCount(e.target.value)}
+                                className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500"
+                                required
+                            />
+                        </div>
+
+                        {/* منتج مميز */}
+                        <div className="flex items-center h-full pt-6">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isFeatured}
+                                    onChange={(e) => setIsFeatured(e.target.checked)}
+                                    className="w-5 h-5 text-indigo-600 rounded"
+                                />
+                                <span className="text-gray-700">منتج مميز (يظهر في الرئيسية)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-bold text-lg"
+                    >
+                        إضافة المنتج
+                    </button>
+                </form>
             </div>
-            
-            <hr className="my-10" />
-            
-            {/* 👇👇 استخدام المكون المستورد */}
-            <ProductList 
-                products={products} 
-                onDelete={deleteProduct} 
-                onEdit={(product) => setEditingProduct(product)}
-            /> 
-            
-            {editingProduct && (
-                <ProductEditForm 
-                    product={editingProduct} 
-                    onClose={() => setEditingProduct(null)} 
-                />
-            )}
-            
-            <hr className="my-10" />
-            
-            <OrdersDisplay 
-                pendingOrders={pendingOrders} 
-                completedOrders={completedOrders} 
-                onUpdateStatus={handleUpdateStatus} 
-            />
+
+            {/* --- قائمة المنتجات الحالية --- */}
+            <div className="bg-white p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-semibold mb-6 text-gray-700">المنتجات الحالية ({products.length})</h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-right">
+                        <thead className="bg-gray-50 border-b">
+                            <tr>
+                                <th className="p-3">صورة/فيديو</th>
+                                <th className="p-3">الاسم</th>
+                                <th className="p-3">السعر</th>
+                                <th className="p-3">النوع</th>
+                                <th className="p-3">الكمية</th>
+                                <th className="p-3">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {/* هنا نستخدم product كاسم للمتغير داخل الحلقة */}
+                            {products.map((product) => (
+                                <tr key={product.id} className="hover:bg-gray-50">
+                                    <td className="p-3">
+                                        <div className="w-16 h-16 relative bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                                            {product.type === 'video' ? (
+                                                <span className="text-2xl">🎥</span>
+                                            ) : (
+                                                <Image
+                                                    src={product.image || 'https://via.placeholder.com/150'}
+                                                    alt={product.name}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-3 font-medium">{product.name}</td>
+                                    <td className="p-3 text-indigo-600">{product.price.toLocaleString()} د.ع</td>
+                                    <td className="p-3">
+                                        <span className={`px-2 py-1 rounded text-xs ${product.type === 'video' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                                            {product.type === 'video' ? 'فيديو' : 'صورة'}
+                                        </span>
+                                    </td>
+                                    <td className="p-3">{product.inventoryCount}</td>
+                                    <td className="p-3">
+                                        <button
+                                            onClick={() => deleteProduct(product.id)}
+                                            className="text-red-500 hover:text-red-700 bg-red-50 px-3 py-1 rounded"
+                                        >
+                                            حذف
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {products.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="text-center py-8 text-gray-500">
+                                        لا توجد منتجات حالياً
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 }
