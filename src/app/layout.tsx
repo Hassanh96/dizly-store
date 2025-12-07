@@ -1,27 +1,15 @@
 import type { Metadata } from "next";
-import { Cairo } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+// استيراد المزودات (تأكد أن المسارات صحيحة)
+import { CartProvider } from "@/context/CartContext";
+import { ProductProvider } from "@/context/ProductContext";
 
-// استيراد المزودات (Context Providers)
-import { ProductProvider } from "../context/ProductContext";
-import { CartProvider } from "../context/CartContext";
-import { OrderProvider } from "../context/OrderContext";
+const inter = Inter({ subsets: ["latin"] });
 
-// استيراد المكونات الثابتة
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import { Toaster } from "react-hot-toast";
-
-// إعداد الخط العربي
-const cairo = Cairo({ subsets: ["arabic"] });
-
-// كائن البيانات الوصفية (Metadata)
 export const metadata: Metadata = {
-  title: "متجر DİZLY | وجهتك الأولى للأزياء",
-  description: "تسوق أفضل المنتجات العصرية بأسعار منافسة في العراق. متجر DİZLY يقدم تجربة تسوق فريدة مع تشكيلة واسعة من الملابس والإكسسوارات.",
-  icons: {
-    icon: "/favicon.ico", 
-  },
+  title: "Ali Store",
+  description: "متجر علي الإلكتروني",
 };
 
 export default function RootLayout({
@@ -30,29 +18,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // 👇👇 التعديل الأساسي هنا: إضافة suppressHydrationWarning
-    <html lang="ar" dir="rtl" suppressHydrationWarning={true}>
-      <body className={cairo.className}>
-        {/* ترتيب المزودات: البيانات العامة > السلة > الطلبات */}
+    <html lang="ar" dir="rtl">
+      <body className={inter.className}>
+        {/* هام جداً: ترتيب التغليف
+          نضع ProductProvider في الأعلى (أو العكس)، المهم أن يحيطوا بالمحتوى
+        */}
         <ProductProvider>
           <CartProvider>
-            <OrderProvider>
-              
-              {/* الرأس يظهر في جميع الصفحات */}
-              <Header />
-
-              {/* المحتوى المتغير للصفحات */}
-              <main className="min-h-screen">
-                {children}
-              </main>
-
-              {/* التذييل يظهر في جميع الصفحات */}
-              <Footer />
-
-              {/* نافذة التنبيهات */}
-              <Toaster position="top-center" reverseOrder={false} />
-
-            </OrderProvider>
+            <main className="min-h-screen bg-gray-50">
+               {children}
+            </main>
           </CartProvider>
         </ProductProvider>
       </body>

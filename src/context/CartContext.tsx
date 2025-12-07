@@ -1,106 +1,119 @@
-// src/context/CartContext.tsx
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// =========================================================
-// 1. الواجهات (Interfaces)
-// =========================================================
-
+// تعريف نوع البيانات للمنتج داخل السلة
 export interface CartItem {
-    id: string;
-    name: string;
-    price: number;
-    image: string;
-    quantity: number;
+  id: string;
+  title: string;
+  price: number;
+  image: string;
+  quantity: number;
 }
 
-export interface CartContextType {
-    cartItems: CartItem[];
-    totalPrice: number;
-    
-    // 👇👇 تم إضافة هذا التعريف لحل مشكلة TypeScript
-    addItemToCart: (item: CartItem) => void;
-    
-    removeItemFromCart: (id: string) => void;
-    updateItemQuantity: (id: string, quantity: number) => void;
-    clearCart: () => void;
+// تعريف الدوال والبيانات التي يوفرها السياق
+interface CartContextType {
+  cartItems: CartItem[];
+  addToCart: (product: any) => void;
+  removeFromCart: (id: string) => void;
+  clearCart: () => void;
+  cartTotal: number;
+  cartCount: number;
 }
 
-// =========================================================
-// 2. سياق React (Context)
-// =========================================================
+const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartContext = createContext<CartContextType | undefined>(undefined);
+export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-// =========================================================
-// 3. مزود السياق (Provider)
-// =========================================================
+  // استرجاع البيانات من LocalStorage عند تحميل الصفحة
+  useEffect(() => {
+    // التحقق من وجود window للتأكد أننا في المتصفح
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('ali_store_cart');
+      if (savedCart) {
+        try {
+          setCartItems(JSON.parse(savedCart));
+        } catch (error) {
+          console.error("فشل في استعادة بيانات السلة:", error);
+        }
+      }
+    }
+  }, []);
 
-export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-    const [cartItems, setCartItems] = useState<CartItem[]>([]);
-    
-    // دالة إضافة المنتج إلى السلة
-    const addItemToCart = (item: CartItem) => {
-        setCartItems(prevItems => {
-            const existingItem = prevItems.find(i => i.id === item.id);
+  // حفظ البيانات في LocalStorage عند أي تغيير في السلة
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ali_store_cart', JSON.stringify(cartItems));
+    }
+  }, [cartItems]);
 
-            if (existingItem) {
-                // إذا كان المنتج موجوداً، قم بزيادة الكمية
-                return prevItems.map(i =>
-                    i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i
-                );
-            } else {
-                // إذا كان المنتج جديداً، قم بإضافته
-                return [...prevItems, item];
-            }
-        });
-    };
-    
-    // دالة إزالة المنتج
-    const removeItemFromCart = (id: string) => {
-        setCartItems(prevItems => prevItems.filter(item => item.id !== id));
-    };
+  // دالة إضافة منتج للسلة
+  const addToCart = (product: any) => {
+    setCartItems((prevItems) => {
+      // هل المنتج موجود مسبقاً في السلة؟
+      const existingItem = prevItems.find((item) => item.id === product.id);
 
-    // دالة تحديث الكمية
-    const updateItemQuantity = (id: string, quantity: number) => {
-        setCartItems(prevItems =>
-            prevItems.map(item =>
-                item.id === id ? { ...item, quantity: quantity } : item
-            ).filter(item => item.quantity > 0) // لضمان إزالة المنتج إذا أصبحت الكمية صفر
+      if (existingItem) {
+        // نعم: نقوم بزيادة الكمية فقط
+        return prevItems.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
         );
-    };
+      } else {
+        // لا: نضيفه كمنتج جديد (مع التعامل مع اختلاف تسميات الحقول المحتملة)
+        return [
+          ...prevItems,
+          {
+            id: product.id,
+            title: product.title || product.name,
+            price: Number(product.price),
+            image: product.image || product.thumbnail || '',
+            quantity: 1,
+          },
+        ];
+      }
+    });
+  };
 
-    // دالة مسح السلة
-    const clearCart = () => {
-        setCartItems([]);
-    };
-    
-    // حساب السعر الإجمالي
-    const totalPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // دالة حذف منتج من السلة
+  const removeFromCart = (id: string) => {
+    setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
+  };
 
-    return (
-        <CartContext.Provider value={{ 
-            cartItems, 
-            totalPrice, 
-            addItemToCart, // يتم تمرير الدالة هنا
-            removeItemFromCart,
-            updateItemQuantity,
-            clearCart
-        }}>
-            {children}
-        </CartContext.Provider>
-    );
+  // دالة إفراغ السلة بالكامل
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
+  // حساب إجمالي السعر
+  const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  
+  // حساب عدد العناصر الكلي
+  const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
+
+  return (
+    <CartContext.Provider
+      value={{
+        cartItems,
+        addToCart,     
+        removeFromCart,
+        clearCart,
+        cartTotal,
+        cartCount,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
 };
 
-// =========================================================
-// 4. خطاف الوصول المخصص (Custom Hook)
-// =========================================================
-
+// Hook مخصص لسهولة استخدام السلة في أي مكان
 export const useCart = () => {
-    const context = useContext(CartContext);
-    if (context === undefined) {
-        throw new Error('useCart must be used within a CartProvider');
-    }
-    return context;
+  const context = useContext(CartContext);
+  if (context === undefined) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
 };
